@@ -10,6 +10,35 @@ const run_code = (code) => {
     catch (e) { return e; }
 }
 
+// Words that may start a valid expression without naming a global.
+const EXPRESSION_KEYWORDS = new Set([
+    "new", "typeof", "void", "delete", "await", "function", "class",
+    "this", "true", "false", "null", "undefined", "NaN", "Infinity",
+]);
+const BUILTIN_COMMANDS = new Set(["clear"]);
+
+// Checks a command without running it: it must parse as an expression,
+// and if it starts with a name, that name must exist on the page.
+const is_valid_command = (code) => {
+    let command = code.trim();
+    if (command == "") return false;
+    if (BUILTIN_COMMANDS.has(command)) return true;
+
+    try { new Function("return " + command); }
+    catch (e) { return false; }
+
+    let head = command.match(/^[A-Za-z_$][\w$]*/);
+    if (!head || EXPRESSION_KEYWORDS.has(head[0])) return true;
+    return head[0] in globalThis;
+}
+
+const paint_input = (input) => {
+    let text = input.innerText.trim();
+    let valid = is_valid_command(text);
+    input.classList.toggle("valid", text != "" && valid);
+    input.classList.toggle("invalid", text != "" && !valid);
+}
+
 const log_result = (input, result, err=false) => {
 
     // set result
@@ -44,6 +73,7 @@ console_input_wrapper.addEventListener("click", () => {
 })
 
 let console_input = document.getElementById("console-input");
+console_input.addEventListener("input", (e) => paint_input(e.target));
 console_input.addEventListener("keypress", (e) => {
     if (e.key == "backspace") console.old("asdf");
     if (e.key != "Enter") return;
@@ -53,9 +83,10 @@ console_input.addEventListener("keypress", (e) => {
     let text = e.target.innerText;
     console.old(text)
     if (text == "") return;
-    if (text == "clear") { clear_shell(); e.target.value = ""; return; }
+    if (text == "clear") { clear_shell(); e.target.innerText = ""; paint_input(e.target); return; }
     let result = run_code(text);
     log_result(text, result, (result instanceof Error ? true : false));
     e.target.innerText = ""
+    paint_input(e.target);
 
 })
