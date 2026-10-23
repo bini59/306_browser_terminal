@@ -39,6 +39,14 @@
   color: #fff;
   caret-color: #000;
 }
+.console #console-input.valid {
+  color: #05ba25;
+  font-weight: bold;
+}
+.console #console-input.invalid {
+  color: #ff625e;
+  font-weight: bold;
+}
 .console #console-input:focus {
   outline: none;
 }
